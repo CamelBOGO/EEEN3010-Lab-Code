@@ -170,7 +170,7 @@ void setup() {
     }
 
     // Start the display and show a short message to indicate the program is running.
-    lcdWrite(0, 0, "Lab1:CAV Cooling");
+    lcdWrite(0, 0, "Lab1:VAV Cooling");
 
     // Set the three servo motors to their initial positions.
     servoAirMix.writeRatio(0.5);
@@ -197,69 +197,55 @@ void setup() {
 }
 
 void loop() {
-    // measurements ========================================================
-    // read all humidity and temperature from DHT sensors
-    for (int i = 0; i < dhtNum; i++) {
-        humiditySensor[i].readMeasurements();
-    }
-    // read all temperature sensors from DS18B20 sensors
-    for (int i = 0; i < ds18b20Num; i++) {
-        temperatureSensor[i].requestTemperature();
-    }
+    // Request new readings before getting the values.
+    for (int i = 0; i < dhtNum; i++) humiditySensor[i].readMeasurements();
+    for (int i = 0; i < ds18b20Num; i++) temperatureSensor[i].requestTemperature();
 
-    // update fans speed
+    // Update the current fan speed from the two fans.
     fanIn.updateHz();
     fanOut.updateHz();
 
-    // update knobs values
+    // Read the two knobs and store their values in the knobValue array.
     knobValue[0] = readKnobInput(0);
     knobValue[1] = readKnobInput(1);
 
-    // ================================ Lab2 VAV cooling controls starts here ========================================================
-    // ———————— control fan speed using DHT sensor 3————————
-    // control logic fan speeds based on the room temperature
-
-    float fanControlInput = 0.4;
-
-    // send actual pwm to output control channels for fans
+    // Fan speed control: set the same fan speed for both fans, using a value from 0.0 to 1.0.
+    float fanControlInput = 0.5;  // change this value
     fanIn.pwm.writeRatio(fanControlInput);
     fanOut.pwm.writeRatio(fanControlInput);
 
-    // ———————— simple control for peltier ————————
+    // Lab2 VAV cooling controls STARTS HERE ===========================================================================
     float targetAirTemperature = 22.0;                    // you can change this value so that this value is lower than the room environment.
     targetAirTemperature += knobValue[0] - knobValue[1];  // quick offset for update in realtime without re-program
+
+    // Get the room temperature.
     float roomTemperature = humiditySensor[1].getTemperature();
+
+    // Control logic for Peltier device: turn on the Peltier device if the room temperature is above the target.
     if (roomTemperature > targetAirTemperature) {
-        // what to do here?
         peltier.on();
     } else {
-        // what to do here?
         peltier.off();
     }
-    // always ON for cooler
-    // ———————— simple control for heater ————————
-    heater.writeRatio(0.0);  // always OFF for heater
-    // ———————— simple control for humidifier ————————
-    humidifier.off();  // always OFF for humidifier
-    // ================================ Lab2 VAV cooling controls ends here ========================================================
+    // Lab2 VAV cooling controls ENDS HERE =============================================================================
 
-    // display ========================================================
+    // Turn off the heater and humidifier, as they are not used in this cooling control lab.
+    heater.writeRatio(0.0);
+    humidifier.off();
 
-    // display page via serial port
+    // Show current readings on the computer and the LCD.
     displaySerialPage();
 
-    // display page on LCD display
+    // Update current status on the LCD.
     lcdWrite(0, 1, "Fan:");
     lcdWrite(4, 1, String(fanControlInput));
+    lcdWrite(10, 1, String(knobValue[0]));
+    lcdWrite(15, 1, String(knobValue[1]));
     lcdWrite(0, 2, "targetTemp:");
     lcdWrite(12, 2, String(targetAirTemperature));
     lcdWrite(0, 3, "currentTemp:");
     lcdWrite(13, 3, String(roomTemperature));
 
-    lcdWrite(10, 1, String(knobValue[0]));
-    lcdWrite(15, 1, String(knobValue[1]));
-
-    // frame ends =====================================================
     onboardLed.toggle();
     delay(2000);  // DHT22 sensors needs to be updated at 2Hz max
 }
