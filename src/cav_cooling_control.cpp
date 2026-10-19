@@ -150,61 +150,49 @@ void displaySerialPage() {
 // =====================================================================================================================
 
 void setup() {
-    // init serial debug port
+    // Start the computer connection used for messages and sensor readings.
     Serial.begin(115200);
-    Serial.println("initialize...");
-    delay(100);
+    Serial.println("Initializing...");
 
-    // check whether the power supply has been turned ON, wait before it is ON.
-    while (1) {
-        // read all temperature sensors from DS18B20 sensors
-        for (int i = 0; i < ds18b20Num; i++) {
-            temperatureSensor[i].requestTemperature();
-        }
+    // Initialize display early so users can see startup progress/errors
+    lcdInit();
+    lcdWrite(0, 0, "Initializing...");
 
-        if (temperatureSensor[0].getTempC() > 0) {
-            break;  // quit this while loop if received valid measurement data, note: invalud measurement is -127
-        }
+    // Wait until the first DS18B20 reports a valid temperature.
+    while (true) {
+        // Request a temperature reading from each DS18B20 sensor and check the first sensor's reading.
+        for (int i = 0; i < ds18b20Num; i++) temperatureSensor[i].requestTemperature();
+        if (temperatureSensor[0].getTempC() > 0) break;
 
-        // display error and suggest method
-        Serial.println("invalid sensor measurement! Check if power supply is turned ON.");
-        delay(2000);  // Max 0.5Hz update rate for DHT22
+        // A repeated message helps identify a sensor or power connection problem.
+        Serial.println("Invalid sensor measurement! Check if power supply is turned ON.");
+        delay(2000);
     }
 
-    // init LCD
-    lcdInit();
-    lcdWrite(0, 0, "Lab1:VAV_Cooling");
+    // Start the display and show a short message to indicate the program is running.
+    lcdWrite(0, 0, "Lab1:CAV Cooling");
 
-    // ————————set the servo dampers' position in advance————————
-    // damper control for the air mixing, air exhaust, and outdoor air
+    // Set the three servo motors to their initial positions.
     servoAirMix.writeRatio(0.5);
-    delay(500);
-    servoAirExhaust.writeRatio(0.2);  // 0.5 for period 1, 0.2 for period 2//
-    delay(500);
-    servoAirOutdoor.writeRatio(0.2);  // 0.5 for period 1, 0.2 for period 2//
-    delay(500);
+    servoAirExhaust.writeRatio(0.5);  // Suggest 0.5 for period 1, 0.2 for period 2
+    servoAirOutdoor.writeRatio(0.5);  // Suggest 0.5 for period 1, 0.2 for period 2
 
-    // pre cool the cooling sink to emulate the chiller water of a building
-    Serial.println("pre cool the cooling sink...");
+    // Pre-cool the cooling sink with the Peltier device until it reaches a target temperature.
+    Serial.println("Pre-cool the cooling sink...");
     float targetCoolSinkTemp = 8.0;
     do {
-        // read all temperature sensors from DS18B20 sensors
-        for (int i = 0; i < ds18b20Num; i++) {
-            temperatureSensor[i].requestTemperature();
-        }
-        // control cooling ON
+        // Request a temperature reading from each DS18B20 sensor.
+        for (int i = 0; i < ds18b20Num; i++) temperatureSensor[i].requestTemperature();
+
+        // Turn on the Peltier device to cool the cooling sink until it reaches the target temperature.
         peltier.on();
 
         // display temperature
-        Serial.print("targetCoolSinkTemp: ");
-        Serial.print(targetCoolSinkTemp);
-        Serial.print(", currentCoolSinkTemp: ");
-        Serial.println(temperatureSensor[0].getTempC());
+        Serial.printf("targetCoolSinkTemp: %f, currentCoolSinkTemp: %f\n", targetCoolSinkTemp, temperatureSensor[0].getTempC());
         delay(2000);  // Max 0.5Hz update rate for DHT22
     } while (temperatureSensor[0].getTempC() > targetCoolSinkTemp);
 
-    Serial.println("pre cool...finish!");
-
+    Serial.println("Pre-cool...finish!");
     delay(1000);
 }
 
