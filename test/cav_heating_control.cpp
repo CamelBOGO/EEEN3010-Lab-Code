@@ -179,6 +179,9 @@ void setup() {
 
     Serial.println("Initializing...done!");
     delay(1000);
+
+    // Turn off the Peltier, not use in this lab.
+    peltier.off();
 }
 
 void loop() {
@@ -199,9 +202,6 @@ void loop() {
     fanIn.pwm.writeRatio(fanControlInput);
     fanOut.pwm.writeRatio(fanControlInput);
 
-    // Turn off the Peltier, not use in this lab.
-    peltier.off();
-
     // Lab1 CAV heating and humidity controls START HERE ===============================================================
     float targetAirHumidity = 50.00;
     float targetAirTemperature = 29.0;
@@ -218,7 +218,7 @@ void loop() {
     } else {
         heater.writeRatio(0);
     }
-    
+
     // Control logic for humidifier: turn on the humidifier if the room humidity is below the target
     if (roomHumidity < targetAirHumidity) {
         humidifier.on();

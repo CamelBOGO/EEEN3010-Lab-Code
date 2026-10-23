@@ -178,6 +178,11 @@ void setup() {
 
     Serial.println("Initializing...done!");
     delay(1000);
+
+    // Turn off the Peltier device, heater, and humidifier.
+    peltier.off();
+    heater.writeRatio(0);
+    humidifier.off();
 }
 
 void loop() {
@@ -197,11 +202,6 @@ void loop() {
     float fanControlInput = knobValue[0];  // change this knob to set fan speed
     fanIn.pwm.writeRatio(fanControlInput);
     fanOut.pwm.writeRatio(fanControlInput);
-
-    // Turn off the Peltier device, heater, and humidifier.
-    peltier.off();
-    heater.writeRatio(0);
-    humidifier.off();
 
     // Show current readings on the computer and the LCD.
     displaySerialPage();

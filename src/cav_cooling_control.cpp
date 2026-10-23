@@ -194,6 +194,10 @@ void setup() {
 
     Serial.println("Pre-cool...finish!");
     delay(1000);
+
+    // Turn off the heater and humidifier, as they are not used in this cooling control lab.
+    heater.writeRatio(0.0);
+    humidifier.off();
 }
 
 void loop() {
@@ -228,10 +232,6 @@ void loop() {
         peltier.off();
     }
     // Lab2 VAV cooling controls ENDS HERE =============================================================================
-
-    // Turn off the heater and humidifier, as they are not used in this cooling control lab.
-    heater.writeRatio(0.0);
-    humidifier.off();
 
     // Show current readings on the computer and the LCD.
     displaySerialPage();
